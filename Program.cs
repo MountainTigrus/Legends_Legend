@@ -35,10 +35,10 @@ namespace Legends_Legend
         private protected int HP_internal;
         public int HP
         {
-            set { HP_internal = (value > 0) ? value : 0; if (HP == 0) WriteLine($"{LifeForm} {Name} is dead."); if (HP_internal > maxHP) HP_internal = maxHP; }
+            set { HP_internal = (value > 0) ? value : 0; if (HP == 0) WriteLine($"{LifeForm} {Name} is dead."); if (HP_internal > MaxHP) HP_internal = MaxHP; }
             get { return HP_internal; }
         }
-        public int maxHP
+        public int MaxHP
         {
             set { maxHP_internal = (value > 0) ? value : 1; }
             get { return maxHP_internal; }
@@ -59,14 +59,13 @@ namespace Legends_Legend
         public Creature(string Form_Of_Life)
         {
             LifeForm = Form_Of_Life;
-            maxHP = HP = 100;
+            MaxHP = HP = 100;
             ID = Objects_Count++;
         }
         public Creature(string Form_Of_Life, int Hit_Points)
         {
             LifeForm = Form_Of_Life;
-            maxHP = HP = Hit_Points;
-            maxHP = HP = 100;
+            MaxHP = HP = Hit_Points;
             ID = Objects_Count++;
         }
         public Creature(string Form_Of_Life, string Creature_Name, int Hit_Points):this(Form_Of_Life, Hit_Points)
@@ -114,18 +113,18 @@ namespace Legends_Legend
     {
         //------------ Variables & Constants ------------- <NPC>
         public string profession = "Фермер";
-        private int Purce_internal = 0;
-        public int purce
+        private int _purce = 0;
+        public int Purce
         {
-            set{ Purce_internal = (value >= 0) ? value : 0; }
-            get { return Purce_internal; }
+            set{ _purce = (value >= 0) ? value : 0; }
+            get { return _purce; }
         }
                                                                     
         //------------ Constructors --------------- <NPC>
         public NPC() : base("Человек")
         {
             Name = "Путешественник";
-            maxHP = 10;
+            MaxHP = 10;
         }
         public NPC(string NPC_Name) : base("Человек")
         {
@@ -174,7 +173,6 @@ namespace Legends_Legend
         {
             return !((A.name == B.name) & (A.price == B.price));
         }
-
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(this, obj))
@@ -189,7 +187,6 @@ namespace Legends_Legend
 
             throw new NotImplementedException();
         }
-
         public override int GetHashCode()
         {
             throw new NotImplementedException();
@@ -267,10 +264,10 @@ namespace Legends_Legend
             return Who_Must_Die.HP == 0; //if hp == 0 then he dead
         }
 
-        public bool Spoken_With(Creature Who_Must_Speak)//when you must speak with someone
-        {
-            return true;//??????
-        }
+        //public bool Spoken_With(Creature Who_Must_Speak)//when you must speak with someone
+        //{
+          //  return true;//??????
+        //}
     }
 
     struct Display_Parametrs//Display lists and parametrs
@@ -339,7 +336,7 @@ namespace Legends_Legend
         public int Area // участок в листе, отвечающий требованиям 1, 2 или 3й
         {set { if (value > 0 & value <= 4) _area = value; } get { return _area; }  }
         public int[] AreaStartPoint = new int[] { 0, 0, 0, 0 ,0 }; // где начинается участок
-
+        public int Mission_Bout = -1; // если участок не первый, то о какой миссии идёт речь
         public (bool,string) this[int i] // модификатор доступа объект как массив [], с учётом рабочего участка
             { 
                 //set { Phrase_inter[ AreaStartPoint[Area - 1] + i ] = value; }
@@ -355,7 +352,10 @@ namespace Legends_Legend
             "ATACK",            // when need to fight
             "CHECK",            // start cheking missions
             "END_DIALOG",       // marks dialog on ending
-            "MISSION_NAME",     //  CHANGE on misiion name
+            "MISSION_COMPLETE", // Выполнение миссии
+            "MISSION_ITEM",     // ПОМЕНЯТЬ на объект миссии
+            "MISSION_GIVE",     // Выдать миссию
+            "MISSION_NAME",     // CHANGE on mission name
             "NPC_PROFESSION",   // CHANGE on NPC.Name
             "NPC_NAME",         // CHANGE on NPC.Name
         };
@@ -397,9 +397,10 @@ namespace Legends_Legend
             ( "Приветствие", 2, false, "Ох, знаешь, беда" ),
             ( "Приветствие", 2, true, "Что такое, дружище?" ),
             ( "Приветствие", 2, false, "До жути хочу MISSION_ITEM" ),
-            ( "Приветствие", 2, true, "Так я тебе приволоку!" ),
-            ( "Приветствие", 2, false, "Серьёзн? ты клёвый посан :'))" ),
-            ( "Приветствие", 2, true, "А то 8)" ),
+            ( "Приветствие", 2, true, "Так я тебе приволоку!MISSION_GIVE|Редкая штука, забудь о ней..." ),
+            ( "Приветствие", 2, false, "Серьёзн? ты клёвый посан :'))|Да, пожалуй, а ты не мог бы..." ),
+            ( "Приветствие", 2, true, "А то 8)|Нет." ),
+            ( "Приветствие", 2, false, "Да укажут тебе путь Звёзды!|:'((" ),
 
             ( "Приветствие", 3, false, " Что там с моей просьбой?" ),
             ( "Приветствие", 3, true, "Ах, это..." ),
@@ -424,17 +425,15 @@ namespace Legends_Legend
             ( "BRING", 1, true, "Спасибо!"),
             ( "BRING", 1, false, "Что то ещё?"),
 
-            ( "BRING", 2, true, "Есть что то ещё по поводу MISSION_ITEMа?"),
-            ( "BRING", 2, false, "Ты мне скажи!"),
+            ( "BRING", 2, true, "По поводу MISSION_ITEMа..."),
+            ( "BRING", 2, false, "Что?"),
             ( "BRING", 2, true, "Я как раз собирался идти за этой штукенцией"),
-            ( "BRING", 2, false, "Пасябки"),
+            ( "BRING", 2, false, "Я на тебя расчитываю!"),
 
-            ( "BRING", 3, true, "Мужыыык, смари чо!" ),
-            ( "BRING", 3, true, "Чо?"),
-            ( "BRING", 3, true, "MISSION_ITEM"),
-            ( "BRING", 3, false, "Ядрёна Матрёна, фигаси!!"),
-            ( "BRING", 3, true, "8)"),
-            ( "BRING", 3, false, "Ты клёвый посан!"),
+            ( "BRING", 3, true, "По поводу MISSION_ITEMа..." ),
+            ( "BRING", 3, false, "Что?"),
+            ( "BRING", 3, true, "MISSION_ITEM для тебя!|Да ничего пока."),
+            ( "BRING", 3, false, "Благодарю тебя! Теперь у меня есть всё, что мне нужно!MISSION_COMPLETE|Я на тебя расчитываю!"),
 
             ( "BRING", 4, true, "Что ты знаешь по поводу MISSION_ITEMа?" ),
             ( "BRING", 4, true, "Знаю что то"),
@@ -447,14 +446,19 @@ namespace Legends_Legend
 
     class Conversation_Machine
     {
+        readonly Condition_Checker Check = new Condition_Checker();
+        readonly Stuff_Juggler Mov = new Stuff_Juggler();
         delegate void Action(); // Запись действий при выборе какой то строки
         public List<Thema> Dialog_Theme_List = new List<Thema>(0); // Общий список тем ГГ
+        readonly NPC Hero;
 
-        public Conversation_Machine()
+        public Conversation_Machine(NPC Main_Hero)
         {
+            Hero = Main_Hero;
             Add_Theme("Приветствие", -1);
             Add_Theme("Прощание", -1);
         }
+        
         public bool Add_Theme(string New_Theme, int Mission_Connect)
         {
             foreach (Thema th in Dialog_Theme_List)
@@ -470,12 +474,11 @@ namespace Legends_Legend
             }
 
         }
-
         public bool Remove_Theme(int Mission_Complete_ID)
         {
             for ( int i = 0; i< Dialog_Theme_List.Count ; i++ )
             {
-                if (Dialog_Theme_List[i].bout_mission_num == Mission_Complete_ID)
+                if (Dialog_Theme_List[i].bout_mission_num == Mission_Complete_ID & Dialog_Theme_List[i].Title != "Приветствие")
                 { Dialog_Theme_List.RemoveAt(i); return true; }
             }
             return true;
@@ -493,7 +496,7 @@ namespace Legends_Legend
             bool Dialog_Ended = false; // When must go out dialog
 
             // Метод ------------ Заполняем ключи в строке ----------------------------------------
-            string Apply_Phrase(string pr_Phrase)
+            string Apply_Phrase(string pr_Phrase, int Connect_Mission)
             {
                 Output_Action = null;
                 string end_string = pr_Phrase;
@@ -507,49 +510,110 @@ namespace Legends_Legend
                         // -------------------------- Actions on keyword!! -----------------------------
                         switch (key)
                         {
+                            case "ATACK": break;
+                            case "CHECK": break;
+                            case "END_DIALOG":
+                                Output_Action += delegate { Dialog_Ended = true; }; 
+                                break;
+                            case "MISSION_COMPLETE":
+                                Output_Action += delegate
+                                {
+                                    Mov.Transfer(Hero, Humanoid, 0);
+                                    WriteLine($"Id item is Mission_Background[Connect_Mission].ID");
+
+                                    Mission_Background[Connect_Mission].Rewarded = true;
+                                    
+                                    Remove_Theme(Connect_Mission);
+                                };
+                                break;
+                            case "MISSION_ITEM":
+                                end_string = end_string.Insert(found_on, Mission_Background[Connect_Mission].Item_Wanted.name);
+                                break;
+                            case "MISSION_GIVE":
+                                Output_Action += delegate{ Mission_Background[Connect_Mission].Given = true;
+                                    Add_Theme("BRING", Connect_Mission);};
+                                    break;
+                            case "MISSION_NAME": break;
+                            case "NPC_PROFESSION":
+                                end_string = end_string.Insert(found_on, Humanoid.profession); 
+                                break;
                             case "NPC_NAME":
                                 end_string = end_string.Insert(found_on, Humanoid.Name);
                                 break;
-                            case "NPC_PROFESSION":
-                                end_string = end_string.Insert(found_on, Humanoid.profession);
-                                break;
-                            case "END_DIALOG": Output_Action += delegate { Dialog_Ended = true; }; break;
-                            case "CHECK": break;
-                            case "ASKING_MISSIONS": break;
-                            case "IF_NOT_FAMILIAR": break;
                         }
                     }
                 }
                 return end_string;
             }
+            
             // Метод ------------ Разговор о какой то конкретной теме -----------------------------
             void Talk_About(Thema Theme)
             {
                 Theme_Step(Theme);
                 string Talk_About = "";
+                int choose;
+
+                int D_Case_Num = 0; // --- Развилка в беседе --------
+                List<string> Dialog_Case_Out = new List<string>(0);//strings for output 
+                List<Action> Dialog_Case_Action = new List<Action>(0);// действия для выбранного пункта диалога
+
                 while (Talk_About != "END")
                 {
-                    List<string> Dialog_Case_Out = new List<string>(0);//strings for output 
-                    List<Action> Dialog_Case_Action = new List<Action>(0);// действия для выбранного пункта диалога
-                    NPC_Phrase = ""; //Clean output
+                    //Clean output
+                    NPC_Phrase = "";
+                    Dialog_Case_Out.Clear();
+                    Dialog_Case_Action.Clear();
+
                     Talk_About = Theme_Step(Theme);
-                    if (Talk_About == "END") break;
-                    Dialog_Case_Out.Add(Apply_Phrase(Talk_About));
-                    Dialog_Case_Action.Add(Output_Action);
-                    Shog_Dialog_Window(Apply_Phrase(NPC_Phrase), Dialog_Case_Out);
-                    int choose = 0;
+                    //---- Текст НПС --------
+                    string[] D_NPC_Text = NPC_Phrase.Split(new char[] { '|' });
+                    if (D_NPC_Text.Length == 1)
+                        NPC_Phrase = D_NPC_Text[0];
+                    else
+                        NPC_Phrase = D_NPC_Text[D_Case_Num - 1];
+
+                    if (Talk_About == "END")
+                    {
+                        Apply_Phrase(NPC_Phrase, Theme.bout_mission_num);
+                        Output_Action?.Invoke();
+                        break;
+                    }
+
+                    // --- Развилка в беседе ------- и вывод диалога -----
+                    string[] D_Case_Text = Talk_About.Split(new char[] { '|' });
+
+                    if (D_Case_Num == 0) 
+                        for (int i = 0; i < D_Case_Text.Length; i++)
+                        {                       
+                            Dialog_Case_Out.Add(Apply_Phrase(D_Case_Text[i], Theme.bout_mission_num));
+                            Dialog_Case_Action.Add(Output_Action);
+                        }
+                    else
+                    {
+                        Dialog_Case_Out.Add(Apply_Phrase(D_Case_Text[D_Case_Num-1], Theme.bout_mission_num));
+                        Dialog_Case_Action.Add(Output_Action);
+                    }
+
+                    
+                    Shog_Dialog_Window(Apply_Phrase(NPC_Phrase, Theme.bout_mission_num), Dialog_Case_Out);
+
+                    choose = 0;
                     while (choose == 0)
                     {
                         string Enter = ReadLine();
                         if (!Int32.TryParse(Enter, out choose)) WriteLine("Not valid nember of string dialog");
-                        else if (choose < 1 || choose >= Dialog_Theme_List.Count)
+                        else if (choose < 1 | choose >= Dialog_Case_Out.Count+1)
                         { choose = 0; WriteLine("Not valid nember of string dialog"); }
-                        
                     };
 
+                    Dialog_Case_Action[choose - 1]?.Invoke();
+
+                    if (D_Case_Num == 0 & D_Case_Text.Length>1)
+                        D_Case_Num = choose;
                 }
 
             }
+            
             // Метод ------------ Следующий шаг в теме, если следующего нет, но return false, My_Words = "END"
             string Theme_Step(Thema My_Theme)
             {
@@ -571,8 +635,9 @@ namespace Legends_Legend
                     return (My_Theme[Step].Item2); //снова добрались до моей фразы
                 }
             }
+            
             // Метод------------ Выводит заголовок НПС и варианты ответа
-            void Shog_Dialog_Window(string His_Words, List<string> My_words)
+            static void Shog_Dialog_Window(string His_Words, List<string> My_words)
             {
                 int i;
                 BackgroundColor = ConsoleColor.Blue;
@@ -586,8 +651,9 @@ namespace Legends_Legend
                     ResetColor(); WriteLine();
                 }
                 BackgroundColor = ConsoleColor.Green;
-                ResetColor(); WriteLine(Dialog_Case_Out.Count + " " + Dialog_Case_Action.Count) ;
+                ResetColor(); WriteLine("") ;
             }
+            
             // Метод ----------- Выбирает вариант диалога в зависимости от обстоятельств ----------
             Action Dailog_Area(Thema Look_In)
             {
@@ -599,10 +665,8 @@ namespace Legends_Legend
                         if (Mission_Background[i].Available & (!Mission_Background[i].Given) & (Mission_Background[i].Whos_Target == Humanoid.ID) & (!Mission_Background[i].Rewarded))
                         {
                             Look_In.Area = 2;
-                            return delegate { 
-                                Mission_Background[i].Given = true;
-                                Add_Theme("BRING", i);
-                            }; 
+                            Look_In.bout_mission_num = i;
+                            return null;
                         }
                         if  (Mission_Background[i].Available & (Mission_Background[i].Given) & (Mission_Background[i].Whos_Target == Humanoid.ID) & (!Mission_Background[i].Rewarded))
                         { Look_In.Area = 3; return null; }
@@ -614,18 +678,17 @@ namespace Legends_Legend
                 if (Look_In.Title == "BRING" & Humanoid.Mission_Connection.Contains(Look_In.bout_mission_num))
                 {
                     Mission_Background[Look_In.bout_mission_num].Check();
-                    if (Mission_Background[Look_In.bout_mission_num].Done)
+
+                    if (Check.Item_Achieved(Mission_Background[Look_In.bout_mission_num].Item_Wanted, Hero)) //Mission_Background[Look_In.bout_mission_num].Done)
                     { 
                         Look_In.Area = 3;
-                        return delegate 
-                        { Mission_Background[Look_In.bout_mission_num].Rewarded = true;
-                            Remove_Theme(Look_In.bout_mission_num);
-                        };
+                        return null;
                     } else
                     { Look_In.Area = 2; return null; }
                 }
                 return null;
             };
+
 
 
             while (!Dialog_Ended)
@@ -636,10 +699,10 @@ namespace Legends_Legend
                 {
                     Step = -1;
                     Action Miss_Con = Dailog_Area(Dialog_Theme_List[i]);
-                    Dialog_Case_Out.Add(Apply_Phrase(Theme_Step(Dialog_Theme_List[i])));
+                    Dialog_Case_Out.Add(Apply_Phrase(Theme_Step(Dialog_Theme_List[i]), Dialog_Theme_List[i].bout_mission_num));
                     Dialog_Case_Action.Add(Output_Action + Miss_Con);
                 }
-                Shog_Dialog_Window(NPC_Phrase, Dialog_Case_Out);
+                Shog_Dialog_Window(Apply_Phrase(NPC_Phrase, Dialog_Theme_List[0].bout_mission_num), Dialog_Case_Out);
 
                 // --------------------------- Выбор номера темы или выхода ---------------------------------
                 int choose = 0;
@@ -653,9 +716,10 @@ namespace Legends_Legend
 
                 // --------------------------- Чтение номера варинта, выход, либо начало продвижения по теме --------
                 Step = -1;
-                
-                Talk_About(Dialog_Theme_List[choose - 1]); //в вариантах с 1 а в массиве с 0
+
                 Dialog_Case_Action[choose - 1]?.Invoke(); // Запуск действия при выборе, если есть
+                Talk_About(Dialog_Theme_List[choose - 1]); //в вариантах с 1 а в массиве с 0
+                
             }
             // ------ Из диалога вышли, оплучен сигнал о выходе
             WriteLine("Bye");
@@ -679,11 +743,12 @@ namespace Legends_Legend
             public string Title;    // название миссии
             public string Description; // описание, что нужно сделать
 
+            readonly public Phys_Object Item_Wanted;
             public bool Available;  // доступность миссии для получения
             public bool Given;      // выдана ли миссия
             public bool Done;       // сделано ли условие миссии
             public bool Rewarded;   // получена ли награда (миссия закрыта)
-            ConMission Mission;     // проверка условия выполненности миссии
+            readonly ConMission Mission;     // проверка условия выполненности миссии
 
             public int Who_Gives;
             public int Whos_Target;
@@ -703,6 +768,8 @@ namespace Legends_Legend
                 Mission = delegate { return Conditions.Item_Achieved(Find, Finder); };
                 Who_Gives = Finder.ID; Whos_Target = Finder.ID;
                 ID = count_acts++;
+
+                Item_Wanted = Find;
             }
 
             // Конструктор миссии об убийстве
@@ -775,21 +842,13 @@ namespace Legends_Legend
     //----------------------------------------------------
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            //-----------------------------
-            // Создание рабочих экзе-ров
-            //-----------------------------
-            Display_Parametrs       Display = new Display_Parametrs();          //Экзе-р для вывода списков
-            Stuff_Juggler           Stuff = new Stuff_Juggler();                //Экзе-р для перемещений предметов
-            Conversation_Machine    Conversation = new Conversation_Machine();  //Экзе-р для диалогов
-
             //-----------------------------
             //Initialize heroes
             //-----------------------------
-            List<Creature> Peoples = new List<Creature> { new NPC("ГГ", 150), new NPC("Алгор воитель", 500),new NPC() };
+            List<Creature> Peoples = new List<Creature> { new NPC("ГГ", 150), new NPC("Алгор воитель", 500), new NPC() };
             //Peoples.AddRange(new Creature[] { new Creature(), new NPC(), new Creature(), new NPC() }) ;
-            Display.Creatures_List(Peoples);
 
             //-----------------------------
             //Initialize objects
@@ -797,33 +856,36 @@ namespace Legends_Legend
             Stuff_Container Chest = new Stuff_Container("Сундучара");
             Chest.Items.AddRange(new List<Phys_Object>
             {new Phys_Object(), new Phys_Object(), new Phys_Object("Секира") { price = 10 } , new Phys_Object("Амулет", 100) });
-            Display.Stuff(Chest);
+
+            //-----------------------------
+            // Создание рабочих экзе-ров
+            //-----------------------------
+            Display_Parametrs       Display = new Display_Parametrs();          //Экзе-р для вывода списков
+            Stuff_Juggler           Stuff = new Stuff_Juggler();                //Экзе-р для перемещений предметов
+            Conversation_Machine    Conversation = new Conversation_Machine(Peoples[0] as NPC);  //Экзе-р для диалогов
+
+            
 
             //-----------------------------
             //Initialize missions
             //-----------------------------
             Mission_Engine My_Story = new Mission_Engine();// (Chest, 1, Peoples, 0); // Экзе-р с миссиями по имеющимся людям и вещам
-            My_Story.All_Missions();
-
-            Stuff.Transfer(Chest, Peoples[0], 3);
-            Peoples[1].HP = 0;
-
-            Display.Stuff(Chest);
-            for (int i = 0; i < Peoples.Count; i++)
-                Display.Stuff(Peoples[i]);
-
-            My_Story.Check_Missions();
-            My_Story.All_Missions();
-
 
             My_Story.Add_Bringer_Mission(Chest.Items[0], Peoples[1]);
             My_Story.All_Missions();
 
+            Display.Stuff(Peoples[0]);
+            Display.Stuff(Peoples[1]);
+
             Conversation.Speak(Peoples[1] as NPC, My_Story);
 
-            Stuff.Transfer(Chest, Peoples[1], 0);
+            Stuff.Transfer(Chest, Peoples[0], 0);
+            Display.Stuff(Peoples[0]);
+            Display.Stuff(Peoples[1]);
 
             Conversation.Speak(Peoples[1] as NPC, My_Story);
+            Display.Stuff(Peoples[0]);
+            Display.Stuff(Peoples[1]);
         }
     }
 
