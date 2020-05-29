@@ -5,37 +5,27 @@ using System.Reflection;
 
 namespace Legends_Legend
 {
-    //----------------------------------------------------
-    //--------------- Сборники констант ------------------
-    //----------------------------------------------------
-    public interface IDamagesTypes
+    //--------------------------------------------------------------------------------------
+    //----------------- Classes for objects and creatures ----------------------------------
+    //--------------------------------------------------------------------------------------
+    interface IDamagesTypes
     {
         protected internal const int TypesCount = 3;
         public const int Melee = 0;
         public const int Archery = 1;
         public const int Magic = 2;
     }
-    public interface IMissionTypes
-    {
-        protected internal const int TypesCount = 3;
-        public const int Bring = 0;
-        public const int Kill = 1;
-        public const int Talk = 2;
-    }
 
-    //----------------------------------------------------
-    //------- Classes for objects and creatures ----------
-    //----------------------------------------------------
-    public class Creature 
+    class Creature
     {
         //------------ Личные параметры перса ------------- <Creature>
         public string Name;
         public string LifeForm;
         public int maxHP_internal;
-        private protected int HP_internal;
+        private protected int HP_internal = 10;
         public int HP
         {
-            set { HP_internal = (value > 0) ? value : 0; if (HP == 0) WriteLine($"{LifeForm} {Name} is dead."); if (HP_internal > MaxHP) HP_internal = MaxHP; }
+            set { HP_internal = (value >= 0) ? value : 0; if (HP == 0) WriteLine($"{LifeForm} {Name} is dead."); if (HP_internal > MaxHP) HP_internal = MaxHP; }
             get { return HP_internal; }
         }
         public int MaxHP
@@ -51,7 +41,7 @@ namespace Legends_Legend
         static int Objects_Count = 0;
         public int ID;
 
-        public List<int> Mission_Connection = new List<int>(0); //Связи с миссиями
+        //public List<int> Mission_Connection = new List<int>(0); //Связи с миссиями
         public List<Phys_Object> pocket = new List<Phys_Object> { };//inventory
 
         //------------ Constructors --------------- <Creature>
@@ -59,16 +49,16 @@ namespace Legends_Legend
         public Creature(string Form_Of_Life)
         {
             LifeForm = Form_Of_Life;
-            MaxHP = HP = 100;
             ID = Objects_Count++;
         }
         public Creature(string Form_Of_Life, int Hit_Points)
         {
             LifeForm = Form_Of_Life;
-            MaxHP = HP = Hit_Points;
+            MaxHP = Hit_Points;
+            HP = Hit_Points;
             ID = Objects_Count++;
         }
-        public Creature(string Form_Of_Life, string Creature_Name, int Hit_Points):this(Form_Of_Life, Hit_Points)
+        public Creature(string Form_Of_Life, string Creature_Name, int Hit_Points) : this(Form_Of_Life, Hit_Points)
         {
             Name = Creature_Name;
         }
@@ -105,32 +95,40 @@ namespace Legends_Legend
 
 
         //------------- Comparing ----------------
+        public int ItemIndex(Phys_Object Find)
+        {
+            for (int i = 0; i < pocket.Count; i++)
+                if (pocket[i].name == Find.name & pocket[i].price == Find.price)
+                    return i;
+            return -1;
+        }
         public override string ToString()
-        { return $"{LifeForm}: {(Name?? "unnamed")} with {HP} HP, ID: {ID}"; }
+        { return $"{LifeForm}: {(Name ?? "unnamed")} with {HP} HP, ID: {ID}"; }
     }
 
-    public class NPC:Creature
+    class NPC : Creature
     {
         //------------ Variables & Constants ------------- <NPC>
         public string profession = "Фермер";
         private int _purce = 0;
         public int Purce
         {
-            set{ _purce = (value >= 0) ? value : 0; }
+            set { _purce = (value >= 0) ? value : 0; }
             get { return _purce; }
         }
-                                                                    
+
         //------------ Constructors --------------- <NPC>
         public NPC() : base("Человек")
         {
             Name = "Путешественник";
             MaxHP = 10;
+            HP = 10;
         }
         public NPC(string NPC_Name) : base("Человек")
         {
             Name = NPC_Name;
         }
-        public NPC(string NPC_Name,int hitpoints) : base("Человек", NPC_Name, hitpoints)
+        public NPC(string NPC_Name, int hitpoints) : base("Человек", NPC_Name, hitpoints)
         {
         }
     }
@@ -140,32 +138,29 @@ namespace Legends_Legend
         public string name;
         public int price;
 
-        public bool Mission_Deals = false; //Mission connection, starts checking when changed
-        public Phys_Object():this("Мусор")
+        public Phys_Object() : this("Мусор")
         {
             price = 1;
         }
-        public Phys_Object(string this_object)
+        public Phys_Object(string Object_Name)
         {
-            name = this_object;
-            price = 5;
+            name = Object_Name;
+            price = 1;
         }
-        
-        public Phys_Object(string object_is, int object_price)
+        public Phys_Object(string Object_Name, int Object_Price)
         {
-            name = object_is;
-            price = (object_price >= 0) ? object_price :1;
+            name = Object_Name;
+            price = (Object_Price >= 0) ? Object_Price : 1;
         }
-
-        public Phys_Object(Phys_Object cr)
+        public Phys_Object(Phys_Object CopiedObject)
         {
-            this.price = cr.price;
-            this.name = cr.name;
-            this.Mission_Deals = cr.Mission_Deals;
+            this.price = CopiedObject.price;
+            this.name = CopiedObject.name;
         }
         //------------- Comparing ----------------
+
         public override string ToString() { return $"{(name ?? "unnamed")} стоимостью: {price}"; }
-        public static bool operator == (Phys_Object A, Phys_Object B)
+        public static bool operator ==(Phys_Object A, Phys_Object B)
         {
             return (A.name == B.name) & (A.price == B.price);
         }
@@ -191,28 +186,26 @@ namespace Legends_Legend
         {
             throw new NotImplementedException();
         }
+
     }
 
-    public class Stuff_Container
+    class Stuff_Container
     {
         public string Name;
-        public bool IS_Locked;
+        public bool IS_Locked = false;
         public List<Phys_Object> Items = new List<Phys_Object>(0);
-        public Stuff_Container()
+        public Stuff_Container() : this("Старый сундук")
         {
-            Name = "Старый сундук";
-            IS_Locked = false;
         }
         public Stuff_Container(string Chest_Name)
         {
             Name = Chest_Name;
-            IS_Locked = false;
         }
     }
 
-    //----------------------------------------------------
-    //----------------- Work structures ------------------
-    //----------------------------------------------------
+    //--------------------------------------------------------------------------------------
+    //------------------- Work structures --------------------------------------------------
+    //--------------------------------------------------------------------------------------
     struct Stuff_Juggler//Transfering things
     {
         //From List to Creature
@@ -232,14 +225,17 @@ namespace Legends_Legend
             }
 
         }
+
         public bool Transfer(Stuff_Container Where_Takes, Creature Who_Takes, int what_takes)
         {
             return MoveItem(ref Where_Takes.Items, ref Who_Takes.pocket, what_takes);
         }
+
         public bool Transfer(Creature Where_Takes, Stuff_Container Who_Takes, int what_takes)
         {
             return MoveItem(ref Where_Takes.pocket, ref Who_Takes.Items, what_takes);
         }
+
         public bool Transfer(Creature Where_Takes, Creature Who_Takes, int what_takes)
         {
             return MoveItem(ref Where_Takes.pocket, ref Who_Takes.pocket, what_takes);
@@ -253,7 +249,7 @@ namespace Legends_Legend
             for (int i = 0; i < Who_Takes.pocket.Count; i++)
                 if (Who_Takes.pocket[i] == Item) //run equality check by == in Phys_Object
                 {
-                    WriteLine($"Place {i}");
+                    //WriteLine($"Place {i}");
                     return true;
                 }
             return false;
@@ -266,7 +262,7 @@ namespace Legends_Legend
 
         //public bool Spoken_With(Creature Who_Must_Speak)//when you must speak with someone
         //{
-          //  return true;//??????
+        //  return true;//??????
         //}
     }
 
@@ -293,7 +289,7 @@ namespace Legends_Legend
             WriteLine(">>Все герои");
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             for (int i = 0; i < cr.Count; i++)
-            { WriteLine(cr[i] + $", ID: {cr[i].ID}"); }
+            { WriteLine(cr[i] + $", ID: {cr[i].ID}, MaxHP: {cr[i].MaxHP}, HP: {cr[i].HP}"); }
             Console.ResetColor();
             WriteLine();
         }
@@ -322,40 +318,39 @@ namespace Legends_Legend
     }
 
 
-    //----------------------------------------------------
-    //------------------ Speak system --------------------
-    //----------------------------------------------------
+    //--------------------------------------------------------------------------------------
+    //------------------ Speak & Mission system --------------------------------------------
+    //--------------------------------------------------------------------------------------
 
     public class Thema //Одна тема беседы, одна линейка разговора
     {
         // --------- Variables and constants ---------------
         public string Title;//Название темы или миссии
-        public List<(bool, string)> Phrase_inter = new List<(bool, string)>(0);//кортежи одной фразы одного человека, тру - мы говорим
+        private readonly List<(bool, string)> Phrase_inter = new List<(bool, string)>(0);//кортежи одной фразы одного человека, тру - мы говорим
         public int bout_mission_num = -1;
         private int _area = 1;
         public int Area // участок в листе, отвечающий требованиям 1, 2 или 3й
-        {set { if (value > 0 & value <= 4) _area = value; } get { return _area; }  }
-        public int[] AreaStartPoint = new int[] { 0, 0, 0, 0 ,0 }; // где начинается участок
-        public int Mission_Bout = -1; // если участок не первый, то о какой миссии идёт речь
-        public (bool,string) this[int i] // модификатор доступа объект как массив [], с учётом рабочего участка
-            { 
-                //set { Phrase_inter[ AreaStartPoint[Area - 1] + i ] = value; }
-                get { return Phrase_inter[ AreaStartPoint[Area - 1] + i ]; }
-            }
+        { set { if (value > 0 & value <= 4) _area = value; } get { return _area; } }
+        public int[] AreaStartPoint = new int[] { 0, 0, 0, 0, 0 }; // где начинается участок
+
+        public (bool, string) this[int i] // модификатор доступа объект как массив [], с учётом рабочего участка
+        { get { return Phrase_inter[AreaStartPoint[Area - 1] + i]; } }
 
         public int Count
-        { get { return AreaStartPoint[Area] - AreaStartPoint[Area-1]; } }
+        { get { return AreaStartPoint[Area] - AreaStartPoint[Area - 1]; } }
 
         // Key words for dialog:
-        static public string[] Key_Words = new string[] {
+        public static readonly string[] Key_Words = new string[] {
 
             "ATACK",            // when need to fight
-            "CHECK",            // start cheking missions
             "END_DIALOG",       // marks dialog on ending
             "MISSION_COMPLETE", // Выполнение миссии
+            "MISSION_INFORMATION", //Информация по прохождению необходимая для миссии
             "MISSION_ITEM",     // ПОМЕНЯТЬ на объект миссии
             "MISSION_GIVE",     // Выдать миссию
             "MISSION_NAME",     // CHANGE on mission name
+            "MISSION_PRICE",    // Цена получения объекта, возможно миссии
+            "MISSION_TALK",     // Засчитывается разговор в миссии
             "NPC_PROFESSION",   // CHANGE on NPC.Name
             "NPC_NAME",         // CHANGE on NPC.Name
         };
@@ -366,7 +361,7 @@ namespace Legends_Legend
             {
                 if (Phrase_Base[i].Item1 == Thema_Name)
                 {
-                    AreaStartPoint[Phrase_Base[i].Item2-1] ++; // сперва получаем длины участков
+                    AreaStartPoint[Phrase_Base[i].Item2 - 1]++; // сперва получаем длины участков
                     Phrase_inter.Add((Phrase_Base[i].Item3, Phrase_Base[i].Item4));
                 }
             }
@@ -380,66 +375,112 @@ namespace Legends_Legend
 
         private static readonly List<(string, int, bool, string)> Phrase_Base = new List<(string, int, bool, string)>//База всех фраз и миссий(название, говорит ГГ, сама фраза
         {
-            /* 1 - без миссии
-             * 2 - Выдача миссии
-             * 3 - Миссия выдана, нпс ждёт
-             * 4 - Миссия выполнена, нпс кайфует */
+            /* ------ HELLO - контрольная общая тема, выдача задания --
+             * 1 - без миссии
+             * 2 - Выдача миссии подай-принеси
+             * 3 - Выдача миссии побазарь-перетри
+             * 4 - Выдача миссии убей-замочи */
+            ( "HELLO", 1, true, "NPC_NAME! Как твои дела?" ),
+            ( "HELLO", 1, false, "Я NPC_PROFESSION, занятие мне всегда надётся." ),
+            ( "HELLO", 1, true, "Хорошо." ),
+            ( "HELLO", 1, false, "Итак" ),
 
-            ( "Приветствие", 1, true, "Эй, NPC_NAME, как дела?" ),
-            ( "Приветствие", 1, false, "Работа, чего тебе надо?" ),
-            ( "Приветствие", 1, true, "Прост побазаить немношк" ),
-            ( "Приветствие", 1, false, "Ой, я NPC_PROFESSION... мне не до разговоров!" ),
-            ( "Приветствие", 1, false, "мне не бдо разговоров!" ),
-            ( "Приветствие", 1, true, "Ок" ),
-            ( "Приветствие", 1, false, "Итак" ),
+            ( "HELLO", 2, true, "NPC_NAME! Как твои дела?" ),
+            ( "HELLO", 2, false, "До жути хочу MISSION_ITEM" ),
+            ( "HELLO", 2, true, "Я достану тебе, что ты хочешь.Где ты последний раз видел MISSION_ITEM?|Редкая штука, забудь о ней..." ),
+            ( "HELLO", 2, false, "Там|Да, пожалуй..." ),
+            ( "HELLO", 2, true, "Я раздобуду для тебя то, что ты хочешь!MISSION_GIVE|END" ),
+            ( "HELLO", 2, false, "Да укажут тебе путь Звёзды!|END" ),
 
-            ( "Приветствие", 2, true, "Эй, NPC_NAME, как дела?" ),
-            ( "Приветствие", 2, false, "Ох, знаешь, беда" ),
-            ( "Приветствие", 2, true, "Что такое, дружище?" ),
-            ( "Приветствие", 2, false, "До жути хочу MISSION_ITEM" ),
-            ( "Приветствие", 2, true, "Так я тебе приволоку!MISSION_GIVE|Редкая штука, забудь о ней..." ),
-            ( "Приветствие", 2, false, "Серьёзн? ты клёвый посан :'))|Да, пожалуй, а ты не мог бы..." ),
-            ( "Приветствие", 2, true, "А то 8)|Нет." ),
-            ( "Приветствие", 2, false, "Да укажут тебе путь Звёзды!|:'((" ),
+            ( "HELLO", 3, true, "NPC_NAME! Как твои дела?" ),
+            ( "HELLO", 3, false, "Ох, знаешь мне нужна помощь. Нужно, что бы кто то поговорил с MISSION_ITEM" ),
+            ( "HELLO", 3, true, "Где ты последний раз видел MISSION_ITEM?|Найди кого нибудь другого, кто тебе поможет" ),
+            ( "HELLO", 3, false, "Там|Я задумаюсь об этом" ),
+            ( "HELLO", 3, true, "Я поговорю с нимMISSION_GIVE|END" ),
+            ( "HELLO", 3, false, "Благодарю тебя!|END" ),
 
-            ( "Приветствие", 3, false, " Что там с моей просьбой?" ),
-            ( "Приветствие", 3, true, "Ах, это..." ),
-            ( "Приветствие", 3, false, "Да, ты хотел принести мне MISSION_ITEM" ),
-            ( "Приветствие", 3, true, "Как раз собирался за ней!" ),
-            ( "Приветствие", 3, false, "Не знаю долго ли я продержусь без него... MISSION_ITEM моё спасение!" ),
+            ( "HELLO", 4, true, "NPC_NAME! Как твои дела?" ),
+            ( "HELLO", 4, false, "Мне очень досаждает MISSION_ITEM! " ),
+            ( "HELLO", 4, false, "Я хочу, что бы он умер" ),
+            ( "HELLO", 4, true, "Я займусь этимнимMISSION_GIVE|Я не буду этим заниматься" ),
+            ( "HELLO", 4, false, "Я жду результата!|Понимаю..." ),
 
-            ( "Приветствие", 4, false, " Рад тебя видеть, мой герой!" ),
-            ( "Приветствие", 4, true, "Ну что, MISSION_ITEM тебе по нраву?" ),
-            ( "Приветствие", 4, false, "Вообще супер! Спасибо тебе!" ),
-            
-            // Техническая тема, прощание
-            ( "Прощание", 1, true, "Ну, пока! END_DIALOG" ),
+            // ------ Техническая тема - ADIEU ---------------------------
+            ( "ADIEU", 1, true, "Ну, пока! END_DIALOG" ),
 
-            /* 1 - Диалог с прочими - не в курсе дел
+            /* ------ Миссия подай-принеси ----------------------------------
+             * 1 - Диалог с прочими - не в курсе дел
              * 2 - Диалог с выдавшим - ждёт
-             * 3 - Диалог с выдавшим - принимает сдачу миссии
-             * 4 - Диалог с прочими - связанный с миссией */
-
+             * 3 - Диалог с принимающим - принимает сдачу миссии
+             * 4 - Диалог с тем, у кого объект */
             ( "BRING", 1, true, "Что ты знаешь по поводу MISSION_ITEMа?" ),
-            ( "BRING", 1, true, "Не знаю ничего"),
-            ( "BRING", 1, true, "Спасибо!"),
+            ( "BRING", 1, false, "Не могу тебе сейчас сказать чего либо ценного"),
+            ( "BRING", 1, true, "Понял тебя."),
             ( "BRING", 1, false, "Что то ещё?"),
 
             ( "BRING", 2, true, "По поводу MISSION_ITEMа..."),
             ( "BRING", 2, false, "Что?"),
-            ( "BRING", 2, true, "Я как раз собирался идти за этой штукенцией"),
+            ( "BRING", 2, true, "Я как раз собирался идти MISSION_ITEM"),
             ( "BRING", 2, false, "Я на тебя расчитываю!"),
 
             ( "BRING", 3, true, "По поводу MISSION_ITEMа..." ),
             ( "BRING", 3, false, "Что?"),
-            ( "BRING", 3, true, "MISSION_ITEM для тебя!|Да ничего пока."),
+            ( "BRING", 3, true, "MISSION_ITEM для тебя!|Пока ничего."),
             ( "BRING", 3, false, "Благодарю тебя! Теперь у меня есть всё, что мне нужно!MISSION_COMPLETE|Я на тебя расчитываю!"),
 
             ( "BRING", 4, true, "Что ты знаешь по поводу MISSION_ITEMа?" ),
-            ( "BRING", 4, true, "Знаю что то"),
-            ( "BRING", 4, true, "Спасибо!"),
-            ( "BRING", 4, false, "Что то ещё?"),
-              
+            ( "BRING", 4, false, "Он у меня, но просто так я тебе его не отдам. MISSION_PRICE"),
+            ( "BRING", 4, true, "Конечно MISSION_PAY_PRICE!|Возможно, позже"),
+            ( "BRING", 4, false, "По рукам! MISSION_COMPLETE|Тогда нам не о чем разговаривать!"),
+
+            /* ------ Миссия побазарь - перетри -----------------------------
+             * 1 - Диалог с прочими - не в курсе дел
+             * 2 - Диалог с выдавшим - ждёт
+             * 3 - Диалог с выдавшим - принимает сдачу миссии
+             * 4 - Диалог с кем надо поговорить */
+            ( "SPEAK", 1, true, "Надо поговорить о MISSION_ITEMе" ),
+            ( "SPEAK", 1, false, "Не могу тебе сейчас сказать чего либо ценное"),
+
+            ( "SPEAK", 2, true, "По поводу MISSION_ITEMа..."),
+            ( "SPEAK", 2, false, "Что?"),
+            ( "SPEAK", 2, true, "Я как раз собирался с ним поговорить"),
+            ( "SPEAK", 2, false, "Я на тебя расчитываю!"),
+
+            ( "SPEAK", 3, true, "По поводу MISSION_ITEMа..." ),
+            ( "SPEAK", 3, false, "Что?"),
+            ( "SPEAK", 3, true, "Я знаю всё, что надо!|Да ничего пока."),
+            ( "SPEAK", 3, false, "Благодарю тебя! MISSION_COMPLETE|Я на тебя расчитываю!"),
+
+            ( "SPEAK", 4, true, "MISSION_ITEM, Надо поговорить" ),
+            ( "SPEAK", 4, false, "Кое что знаю. MISSION_INFORMATION"),
+            ( "SPEAK", 4, true, "Спасибо!MISSION_TALKMISSION_COMPLETE"),
+            ( "SPEAK", 4, false, "Что то ещё?"),
+
+            
+            /* ------ Миссия убей - замочи ----------------------------------
+             * 1 - Диалог с прочими - не в курсе дел
+             * 2 - Диалог с выдавшим - ждёт
+             * 3 - Диалог с выдавшим - принимает сдачу миссии
+             * 4 - Диалог со смертником*/
+            ( "KILL", 1, true, "Ты знаешь где MISSION_ITEM?" ),
+            ( "KILL", 1, false, "Нет, не в курсе"),
+            ( "KILL", 1, true, "Уверен?"),
+            ( "KILL", 1, false, "Абсолютно точно"),
+
+            ( "KILL", 2, true, "По поводу MISSION_ITEMа..."),
+            ( "KILL", 2, false, "Что?"),
+            ( "KILL", 2, true, "Я как раз собирался найти его"),
+            ( "KILL", 2, false, "Я на тебя расчитываю!"),
+
+            ( "KILL", 3, true, "По поводу MISSION_ITEMа..." ),
+            ( "KILL", 3, false, "Что?"),
+            ( "KILL", 3, true, "Он убит!|Да ничего пока."),
+            ( "KILL", 3, false, "Благодарю тебя! MISSION_COMPLETE|Я на тебя расчитываю!"),
+
+            ( "KILL", 4, true, "Кое кто хочет твоей смерти" ),
+            ( "KILL", 4, false, "И зачем ты мне это говоришь?"),
+            ( "KILL", 4, true, "Я здесь от его имени, и теперь ты умрёшь|Просто, что бы ты был в курсе"),
+            ( "KILL", 4, false, "Это мы ещё посмотрим|Благодарю. Что то ещё?"),
 
         };
     }
@@ -455,38 +496,48 @@ namespace Legends_Legend
         public Conversation_Machine(NPC Main_Hero)
         {
             Hero = Main_Hero;
-            Add_Theme("Приветствие", -1);
-            Add_Theme("Прощание", -1);
+            Add_Theme("HELLO");
+            Add_Theme("ADIEU");
         }
-        
-        public bool Add_Theme(string New_Theme, int Mission_Connect)
+
+        public bool Add_Theme(Mission_Engine.Acts My_Action)
         {
-            foreach (Thema th in Dialog_Theme_List)
-            {
-                if (th.Title == New_Theme) return false;
-            }
-            Dialog_Theme_List.Add(new Thema(New_Theme) { bout_mission_num = Mission_Connect});
+            Dialog_Theme_List.Add(new Thema(My_Action.Type) { bout_mission_num = My_Action.ID }) ;
             if (Dialog_Theme_List[Dialog_Theme_List.Count - 1].Count > 0) return true;
             else
             {
                 Dialog_Theme_List.RemoveAt(Dialog_Theme_List.Count - 1);
                 return false;
             }
-
+        }
+        public bool Add_Theme(string New_Theme)
+        {
+            Dialog_Theme_List.Add(new Thema(New_Theme) { bout_mission_num = -1 });
+            if (Dialog_Theme_List[Dialog_Theme_List.Count - 1].Count > 0) return true;
+            else
+            {
+                Dialog_Theme_List.RemoveAt(Dialog_Theme_List.Count - 1);
+                return false;
+            }
         }
         public bool Remove_Theme(int Mission_Complete_ID)
         {
-            for ( int i = 0; i< Dialog_Theme_List.Count ; i++ )
+            for (int i = 0; i < Dialog_Theme_List.Count; i++)
             {
-                if (Dialog_Theme_List[i].bout_mission_num == Mission_Complete_ID & Dialog_Theme_List[i].Title != "Приветствие")
+                if (Dialog_Theme_List[i].bout_mission_num == Mission_Complete_ID & Dialog_Theme_List[i].Title != "HELLO" & Dialog_Theme_List[i].Title != "ADIEU")
                 { Dialog_Theme_List.RemoveAt(i); return true; }
             }
-            return true;
+            return false;
         }
-        
+
         // ---------------- Dialog start with someone --------------
         public void Speak(NPC Humanoid, Mission_Engine Mission_Background)
         {
+            if (Humanoid.HP == 0)
+            {
+                WriteLine("Мёртвые молчат!");
+                return;
+            }
             // ------------------------------------ Variables -------------------------------------
             int Step; //coursor in chosen theme
             string NPC_Phrase = "Здравствуй, меня зовут NPC_NAME. "; // NPC text
@@ -511,31 +562,40 @@ namespace Legends_Legend
                         switch (key)
                         {
                             case "ATACK": break;
-                            case "CHECK": break;
                             case "END_DIALOG":
-                                Output_Action += delegate { Dialog_Ended = true; }; 
+                                Output_Action += delegate { Dialog_Ended = true; };
                                 break;
                             case "MISSION_COMPLETE":
-                                Output_Action += delegate
+                                if (Mission_Background[Connect_Mission].Who_Takes.ID == Humanoid.ID)
+                                    Output_Action += delegate
                                 {
-                                    Mov.Transfer(Hero, Humanoid, 0);
-                                    WriteLine($"Id item is Mission_Background[Connect_Mission].ID");
-
+                                    if (Mission_Background[Connect_Mission].Type == "BRING")
+                                        Mov.Transfer(Hero, Humanoid, Hero.ItemIndex(Mission_Background[Connect_Mission].Item_Wanted));
+                                    Mission_Background[Connect_Mission].Done = true;
                                     Mission_Background[Connect_Mission].Rewarded = true;
-                                    
                                     Remove_Theme(Connect_Mission);
                                 };
                                 break;
                             case "MISSION_ITEM":
-                                end_string = end_string.Insert(found_on, Mission_Background[Connect_Mission].Item_Wanted.name);
+                                if (Mission_Background[Connect_Mission].Type == "BRING")
+                                    end_string = end_string.Insert(found_on, Mission_Background[Connect_Mission].Item_Wanted.name);
+                                if (Mission_Background[Connect_Mission].Type == "SPEAK")
+                                    end_string = end_string.Insert(found_on, Mission_Background[Connect_Mission].Whos_Target.Name);
+
                                 break;
                             case "MISSION_GIVE":
-                                Output_Action += delegate{ Mission_Background[Connect_Mission].Given = true;
-                                    Add_Theme("BRING", Connect_Mission);};
-                                    break;
+                                Output_Action += delegate { Mission_Background[Connect_Mission].Given = true;
+                                    Add_Theme(Mission_Background[Connect_Mission]); };
+                                break;
                             case "MISSION_NAME": break;
+                            case "MISSION_TALK":
+                                Output_Action += delegate {
+                                    if(Mission_Background[Connect_Mission].Type == "SPEAK")
+                                        Mission_Background[Connect_Mission].Done = true;
+                                };
+                                break; 
                             case "NPC_PROFESSION":
-                                end_string = end_string.Insert(found_on, Humanoid.profession); 
+                                end_string = end_string.Insert(found_on, Humanoid.profession);
                                 break;
                             case "NPC_NAME":
                                 end_string = end_string.Insert(found_on, Humanoid.Name);
@@ -545,7 +605,7 @@ namespace Legends_Legend
                 }
                 return end_string;
             }
-            
+
             // Метод ------------ Разговор о какой то конкретной теме -----------------------------
             void Talk_About(Thema Theme)
             {
@@ -582,19 +642,20 @@ namespace Legends_Legend
                     // --- Развилка в беседе ------- и вывод диалога -----
                     string[] D_Case_Text = Talk_About.Split(new char[] { '|' });
 
-                    if (D_Case_Num == 0) 
+                    if (D_Case_Num == 0)
                         for (int i = 0; i < D_Case_Text.Length; i++)
-                        {                       
+                        {
                             Dialog_Case_Out.Add(Apply_Phrase(D_Case_Text[i], Theme.bout_mission_num));
                             Dialog_Case_Action.Add(Output_Action);
                         }
                     else
                     {
-                        Dialog_Case_Out.Add(Apply_Phrase(D_Case_Text[D_Case_Num-1], Theme.bout_mission_num));
+                        if (D_Case_Text[D_Case_Num - 1] == "END") break;  
+                        Dialog_Case_Out.Add(Apply_Phrase(D_Case_Text[D_Case_Num - 1], Theme.bout_mission_num));
                         Dialog_Case_Action.Add(Output_Action);
                     }
 
-                    
+
                     Shog_Dialog_Window(Apply_Phrase(NPC_Phrase, Theme.bout_mission_num), Dialog_Case_Out);
 
                     choose = 0;
@@ -602,18 +663,18 @@ namespace Legends_Legend
                     {
                         string Enter = ReadLine();
                         if (!Int32.TryParse(Enter, out choose)) WriteLine("Not valid nember of string dialog");
-                        else if (choose < 1 | choose >= Dialog_Case_Out.Count+1)
+                        else if (choose < 1 | choose >= Dialog_Case_Out.Count + 1)
                         { choose = 0; WriteLine("Not valid nember of string dialog"); }
                     };
 
                     Dialog_Case_Action[choose - 1]?.Invoke();
 
-                    if (D_Case_Num == 0 & D_Case_Text.Length>1)
+                    if (D_Case_Num == 0 & D_Case_Text.Length > 1)
                         D_Case_Num = choose;
                 }
 
             }
-            
+
             // Метод ------------ Следующий шаг в теме, если следующего нет, но return false, My_Words = "END"
             string Theme_Step(Thema My_Theme)
             {
@@ -635,7 +696,7 @@ namespace Legends_Legend
                     return (My_Theme[Step].Item2); //снова добрались до моей фразы
                 }
             }
-            
+
             // Метод------------ Выводит заголовок НПС и варианты ответа
             static void Shog_Dialog_Window(string His_Words, List<string> My_words)
             {
@@ -651,56 +712,82 @@ namespace Legends_Legend
                     ResetColor(); WriteLine();
                 }
                 BackgroundColor = ConsoleColor.Green;
-                ResetColor(); WriteLine("") ;
+                ResetColor(); WriteLine("");
             }
-            
+
             // Метод ----------- Выбирает вариант диалога в зависимости от обстоятельств ----------
-            Action Dailog_Area(Thema Look_In)
+            int Dailog_Area(Thema Look_In)
             {
                 Look_In.Area = 1;
-                if (Look_In.Title == "Приветствие" & Humanoid.Mission_Connection.Count > 0)
+                switch (Look_In.Title)
                 {
-                    for (int i = 0; i< Humanoid.Mission_Connection.Count; i++)
-                    {
-                        if (Mission_Background[i].Available & (!Mission_Background[i].Given) & (Mission_Background[i].Whos_Target == Humanoid.ID) & (!Mission_Background[i].Rewarded))
+                    case "ADIEU": return -1;
+
+                    case "HELLO":
+                        for (int i = 0; i < Mission_Background.Count; i++)
                         {
-                            Look_In.Area = 2;
-                            Look_In.bout_mission_num = i;
-                            return null;
+                            if (!Mission_Background[i].Rewarded & Mission_Background[i].Available & (Mission_Background[i].Who_Gives.ID == Humanoid.ID))
+                            {
+                                if (Mission_Background[i].Given) return i;
+
+                                switch (Mission_Background[i].Type)
+                                {
+                                    case "BRING": Look_In.Area = 2; Look_In.bout_mission_num = i; return i;
+                                    case "SPEAK": Look_In.Area = 3; Look_In.bout_mission_num = i; return i;
+                                    case "KILL": Look_In.Area = 4; Look_In.bout_mission_num = i; return i;
+                                }
+                            }
                         }
-                        if  (Mission_Background[i].Available & (Mission_Background[i].Given) & (Mission_Background[i].Whos_Target == Humanoid.ID) & (!Mission_Background[i].Rewarded))
-                        { Look_In.Area = 3; return null; }
-                        if (Mission_Background[i].Rewarded)
-                        { Look_In.Area = 4; }
-                    }
+                        return Look_In.bout_mission_num;
+                    
+                    default:
+                        {
+                            if (Mission_Background[Look_In.bout_mission_num].Whos_Target.ID == Humanoid.ID)
+                            {
+                                Look_In.Area = 4; return Look_In.bout_mission_num;
+                            }
+                            if (Mission_Background[Look_In.bout_mission_num].Who_Takes.ID == Humanoid.ID)
+                            {
+                                bool condition = Mission_Background[Look_In.bout_mission_num].Type switch
+                                {
+                                    "BRING" => Check.Item_Achieved(Mission_Background[Look_In.bout_mission_num].Item_Wanted, Hero),
+                                    "SPEAK" => Mission_Background[Look_In.bout_mission_num].Done,
+                                    "KILL" => Mission_Background[Look_In.bout_mission_num].Whos_Target.HP == 0,
+                                };
+
+                                if (condition)
+                                {
+                                    Look_In.Area = 3;
+                                    return Look_In.bout_mission_num;
+                                }
+                                else
+                                {
+                                    Look_In.Area = 2;
+                                    return Look_In.bout_mission_num;
+                                }
+                            }
+
+        
+                            return Look_In.bout_mission_num;
+                        }
                 }
                 
-                if (Look_In.Title == "BRING" & Humanoid.Mission_Connection.Contains(Look_In.bout_mission_num))
-                {
-                    Mission_Background[Look_In.bout_mission_num].Check();
-
-                    if (Check.Item_Achieved(Mission_Background[Look_In.bout_mission_num].Item_Wanted, Hero)) //Mission_Background[Look_In.bout_mission_num].Done)
-                    { 
-                        Look_In.Area = 3;
-                        return null;
-                    } else
-                    { Look_In.Area = 2; return null; }
-                }
-                return null;
-            };
+            }
+                
 
 
-
+            // ---------Код диалога --------------
             while (!Dialog_Ended)
             {
                 // -------------------------- Начало дивлога, построение первонаяального списка  -------------------------
                 Dialog_Case_Out.Clear(); Dialog_Case_Action.Clear();
+
                 for (int i = 0; i < Dialog_Theme_List.Count; i++)//Перебор по одной фразе
                 {
                     Step = -1;
-                    Action Miss_Con = Dailog_Area(Dialog_Theme_List[i]);
+                    Dailog_Area(Dialog_Theme_List[i]);
                     Dialog_Case_Out.Add(Apply_Phrase(Theme_Step(Dialog_Theme_List[i]), Dialog_Theme_List[i].bout_mission_num));
-                    Dialog_Case_Action.Add(Output_Action + Miss_Con);
+                    Dialog_Case_Action.Add(Output_Action);
                 }
                 Shog_Dialog_Window(Apply_Phrase(NPC_Phrase, Dialog_Theme_List[0].bout_mission_num), Dialog_Case_Out);
 
@@ -727,32 +814,26 @@ namespace Legends_Legend
 
         }
     }
-    
-    //----------------------------------------------------
-    //---------- Missions engine structures --------------
-    //----------------------------------------------------
-
+  
     class Mission_Engine
     {
-        // --------- Single acts ------------
-        delegate bool ConMission();
+        // --------- Класс актов ------------
         public class Acts
         {
-
             //PARAMETRS OF SINGLE ACT
             public string Title;    // название миссии
             public string Description; // описание, что нужно сделать
+            public string Type;
 
+            public bool Available = true;  // доступность миссии для получения
+            public bool Given = false;      // выдана ли миссия
+            public bool Done = false;       // сделано ли условие миссии
+            public bool Rewarded = false;   // получена ли награда (миссия закрыта)
+
+            readonly public NPC Who_Gives;
+            readonly public Creature Whos_Target;
+            readonly public NPC Who_Takes;
             readonly public Phys_Object Item_Wanted;
-            public bool Available;  // доступность миссии для получения
-            public bool Given;      // выдана ли миссия
-            public bool Done;       // сделано ли условие миссии
-            public bool Rewarded;   // получена ли награда (миссия закрыта)
-            readonly ConMission Mission;     // проверка условия выполненности миссии
-
-            public int Who_Gives;
-            public int Whos_Target;
-            static public Condition_Checker Conditions = new Condition_Checker();
 
             // ----- for ID ---------
             static int count_acts = 0;
@@ -760,42 +841,59 @@ namespace Legends_Legend
             // Конструктор миссии принеси-подай
             public Acts(Phys_Object Find, Creature Finder)
             {
-                Available = true;
-                Given = Done = Rewarded = false;
                 Description = (Finder.LifeForm == "Человек") ? Finder.Name : Finder.LifeForm;
                 Description += " должен иметь: " + Find.name + " стоимостью " + Find.price;
-                Title = Find.name;
-                Mission = delegate { return Conditions.Item_Achieved(Find, Finder); };
-                Who_Gives = Finder.ID; Whos_Target = Finder.ID;
-                ID = count_acts++;
+                Title = Find.name + " нужен здесь";
+                Type = "BRING";
 
+                Who_Gives = Finder as NPC;
+                Whos_Target = Finder;
+                Who_Takes = Finder as NPC;
+                ID = count_acts++;
                 Item_Wanted = Find;
             }
 
+            public Acts(NPC M_Give, NPC M_Talk, NPC M_Take)
+            {
+                Description = M_Talk.Name + "обладает нужной информацией, поговорите с ним";
+                Title = M_Talk.Name +" что то знает" ;
+                Type = "SPEAK";
+
+                Who_Gives = M_Give;
+                Whos_Target = M_Talk;
+                Who_Takes = M_Take;
+                ID = count_acts++;
+                
+                Item_Wanted = null;
+            }
             // Конструктор миссии об убийстве
-            public Acts(Creature Condemned)
+            public Acts(Creature Client, Creature Condemned)
             {
-                Given = Done = Rewarded = false;
-                Description = ((Condemned.LifeForm == "Человек") ? Condemned.Name : Condemned.LifeForm) + " должен умереть!";
-                Mission = delegate { return Conditions.Creature_Is_Dead(Condemned); };
+                Description = (Condemned.LifeForm == "Человек") ? Condemned.Name : Condemned.LifeForm;
+                Description += " должен evthtnm";
+                Title = (Condemned.LifeForm == "Человек") ? Condemned.Name : Condemned.LifeForm + " должен умереть";
+                Type = "KILL";
+
+                Who_Gives = Client as NPC;
+                Whos_Target = Condemned;
+                Who_Takes = Client as NPC;
+                ID = count_acts++;
+                Item_Wanted = null;
             }
-            //check condition
-            public void Check()
-            {
-                bool If = Mission();
-                if (If) Done = true;
-            }
+
         }
-
+        
+        // -------- Список актов -------------
+        
         public List<Acts> Mission_Acts = new List<Acts>(0);
-
         public Acts this[int i] // модификатор доступа объект как массив [], с учётом рабочего участка
         {
             //set { Phrase_inter[ AreaStartPoint[Area - 1] + i ] = value; }
             get { return Mission_Acts[i]; }
         }
-
-        //Constructor by mission count
+        public int Count
+        { get { return Mission_Acts.Count; } }
+        // -------------------- Конструкторы системы миссий -----------------
         public Mission_Engine()
         { }
         public Mission_Engine(Stuff_Container Items, int count_brings, List<Creature> Cr, int count_kills)
@@ -808,85 +906,106 @@ namespace Legends_Legend
                 obj = rnd.Next(Items.Items.Count);
                 hum = rnd.Next(Cr.Count);
                 Mission_Acts.Add(new Acts(Items.Items[obj], Cr[hum]));
-                Cr[hum].Mission_Connection.Add(i);
+                //Cr[hum].Mission_Connection.Add(i);
             }
             for (int i = count_brings; i < count_brings + count_kills; i++) //добавляем миссии убей-замочи (не сделано!)
             {
-                hum = rnd.Next(Cr.Count);
-                Mission_Acts.Add(new Acts(Cr[hum]));
+                //hum = rnd.Next(Cr.Count);
+                //Mission_Acts.Add(new Acts(Cr[hum]));
             }
 
         }
 
+        // -------------------- Методы миссий -------------------------------
         public void Add_Bringer_Mission(Phys_Object Item, Creature Cr)
         {
             Mission_Acts.Add(new Acts(Item, Cr));
-            Cr.Mission_Connection.Add(Mission_Acts.Count -1);
+            //Cr.Mission_Connection.Add(Mission_Acts.Count -1);
+        }
+
+        public void Add_Murderr_Mission(Creature Client, Creature Condemned)
+        {
+            Mission_Acts.Add(new Acts(Client, Condemned));
+            //Cr.Mission_Connection.Add(Mission_Acts.Count -1);
+        }
+        public void Add_Speaker_Mission(Creature M_Give, Creature M_Talk, Creature M_Take)
+        {
+            Mission_Acts.Add(new Acts(M_Give as NPC, M_Talk as NPC, M_Take as NPC));
+            /*M_Give.Mission_Connection.Add(Mission_Acts.Count - 1);
+            M_Talk.Mission_Connection.Add(Mission_Acts.Count - 1);
+            M_Take.Mission_Connection.Add(Mission_Acts.Count - 1);*/
         }
         public void All_Missions()
         {
             WriteLine("All missions");
             for (int i = 0; i < Mission_Acts.Count; i++)
-                WriteLine($"{i}) {Mission_Acts[i].Description}. Done: {Mission_Acts[i].Done}, ID: {Mission_Acts[i].ID}");
+                WriteLine($"{i}) {Mission_Acts[i].Description}. Given: {Mission_Acts[i].Given}, Done: {Mission_Acts[i].Done}, Rewarded: {Mission_Acts[i].Rewarded}, ID: {Mission_Acts[i].ID}");
         }
-        public void Check_Missions()
-        {
-            for (int i = 0; i < Mission_Acts.Count; i++)
-                Mission_Acts[i].Check();
-        }
-
     }
 
-    //----------------------------------------------------
-    //--------====-------- Program --------====-----------
-    //----------------------------------------------------
+
+    //--------------------------------------------------------------------------------------
+    //------------====-------- Program --------====-----------------------------------------
+    //--------------------------------------------------------------------------------------
     class Program
     {
         static void Main()
         {
-            //-----------------------------
-            //Initialize heroes
-            //-----------------------------
+            // -----------------------------
+            // ---- Initialize heroes
+            // -----------------------------
             List<Creature> Peoples = new List<Creature> { new NPC("ГГ", 150), new NPC("Алгор воитель", 500), new NPC() };
-            //Peoples.AddRange(new Creature[] { new Creature(), new NPC(), new Creature(), new NPC() }) ;
+            Peoples.AddRange(new Creature[] { new NPC(), new Creature(), new Creature(), new NPC() }) ;
 
-            //-----------------------------
-            //Initialize objects
-            //-----------------------------
+            // -----------------------------
+            // ---- Initialize objects
+            // -----------------------------
             Stuff_Container Chest = new Stuff_Container("Сундучара");
             Chest.Items.AddRange(new List<Phys_Object>
             {new Phys_Object(), new Phys_Object(), new Phys_Object("Секира") { price = 10 } , new Phys_Object("Амулет", 100) });
 
-            //-----------------------------
-            // Создание рабочих экзе-ров
-            //-----------------------------
+            // -----------------------------
+            // - Создание рабочих экзе-ров
+            // -----------------------------
             Display_Parametrs       Display = new Display_Parametrs();          //Экзе-р для вывода списков
             Stuff_Juggler           Stuff = new Stuff_Juggler();                //Экзе-р для перемещений предметов
             Conversation_Machine    Conversation = new Conversation_Machine(Peoples[0] as NPC);  //Экзе-р для диалогов
 
-            
-
-            //-----------------------------
-            //Initialize missions
-            //-----------------------------
+            Display.Creatures_List(Peoples);
+            // -----------------------------
+            // ---- Initialize missions
+            // -----------------------------
             Mission_Engine My_Story = new Mission_Engine();// (Chest, 1, Peoples, 0); // Экзе-р с миссиями по имеющимся людям и вещам
 
-            My_Story.Add_Bringer_Mission(Chest.Items[0], Peoples[1]);
+            My_Story.Add_Speaker_Mission(Peoples[1], Peoples[2], Peoples[2]);
+            //My_Story.Add_Bringer_Mission(Chest.Items[2], Peoples[1]);
+            //My_Story.Add_Murderr_Mission (Peoples[1], Peoples[2]);
+
             My_Story.All_Missions();
 
             Display.Stuff(Peoples[0]);
             Display.Stuff(Peoples[1]);
 
             Conversation.Speak(Peoples[1] as NPC, My_Story);
+            My_Story.All_Missions();
+            Conversation.Speak(Peoples[2] as NPC, My_Story);
+            My_Story.All_Missions();
 
+            Peoples[2].HP = 0;
+            Stuff.Transfer(Chest, Peoples[0], 0);
+            Stuff.Transfer(Chest, Peoples[0], 0);
+            Stuff.Transfer(Chest, Peoples[0], 0);
             Stuff.Transfer(Chest, Peoples[0], 0);
             Display.Stuff(Peoples[0]);
             Display.Stuff(Peoples[1]);
 
+            My_Story.All_Missions();
+            Conversation.Speak(Peoples[2] as NPC, My_Story);
+            My_Story.All_Missions();
             Conversation.Speak(Peoples[1] as NPC, My_Story);
             Display.Stuff(Peoples[0]);
             Display.Stuff(Peoples[1]);
+            My_Story.All_Missions();
         }
     }
-
 }
